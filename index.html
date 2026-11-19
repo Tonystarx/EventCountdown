@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Event countdowns</title>
+  <meta name="description" content="Minimal countdown timers for upcoming events." />
+  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="color-scheme" content="dark" />
+
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Countdowns" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <link rel="stylesheet" href="styles.css" />
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <div class="title-block">
+        <h1>Event countdowns</h1>
+        <div class="count" id="count-display"></div>
+      </div>
+      <button type="button" id="toggle-form" class="primary">+ Add event</button>
+    </header>
+
+    <section id="form-wrap" class="hidden" aria-label="Add event">
+      <form class="form-panel" id="event-form" novalidate>
+        <div class="field">
+          <label for="evt-title">Title</label>
+          <input type="text" id="evt-title" placeholder="e.g. Daughter's birthday" maxlength="80" autocomplete="off" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="evt-dt">Date &amp; time (Eastern)</label>
+            <input type="datetime-local" id="evt-dt" />
+          </div>
+          <div class="field">
+            <span class="label">Color</span>
+            <div class="swatches" id="swatches" role="radiogroup" aria-label="Event color"></div>
+          </div>
+        </div>
+        <div id="form-err" class="error-msg hidden" role="alert"></div>
+        <div class="form-actions">
+          <button type="button" id="btn-cancel" class="ghost">Cancel</button>
+          <button type="submit" id="btn-save" class="primary">Save event</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="body-area" aria-live="off"></section>
+
+    <footer class="footer">Data is stored locally in this browser only.</footer>
+  </main>
+</body>
+</html>
