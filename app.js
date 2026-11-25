@@ -149,7 +149,175 @@
   function renderTimeZoneNote() {
     var footer = document.querySelector('.footer');
     if (!footer) return;
-    footer.textContent = 'Data is stored locally in this browser only. All times are ' + TIME_ZONE_LABEL + '.';
+    footer.textContent = 'Data is stored locally in this browser only. Export a backup before ' +
+      'clearing browser data. All times are ' + TIME_ZONE_LABEL + '.';
+  }
+
+  /* ---------- Backup: export / import ---------- */
+
+  var BACKUP_APP_ID = 'event-countdowns';
+  var BACKUP_VERSION = 1;
+  var statusTimer = null;
+
+  function showBackupStatus(msg, kind) {
+    var el = $('backup-status');
+    el.textContent = msg;
+    el.classList.toggle('is-error', kind === 'error');
+    el.classList.toggle('is-success', kind === 'success');
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(function () {
+      el.textContent = '';
+      el.classList.remove('is-error', 'is-success');
+    }, 7000);
+  }
+
+  function easternDateStamp() {
+    // en-CA formats as YYYY-MM-DD
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date());
+  }
+
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    showBackupStatus('Saved ' + filename + '.', 'success');
+  }
+
+  function exportEvents() {
+    if (state.events.length === 0) {
+      showBackupStatus('There are no events to export yet.', 'error');
+      return;
+    }
+    var payload = {
+      app: BACKUP_APP_ID,
+      version: BACKUP_VERSION,
+      exportedAt: new Date().toISOString(),
+      timeZone: TIME_ZONE,
+      events: state.events.map(function (e) {
+        return { id: e.id, title: e.title, datetime: e.datetime, color: e.color, createdAt: e.createdAt };
+      })
+    };
+    var json = JSON.stringify(payload, null, 2);
+    var filename = 'event-countdowns-backup-' + easternDateStamp() + '.json';
+    var blob = new Blob([json], { type: 'application/json' });
+
+    // On phones, the share sheet is the reliable way to save a file
+    // (e.g. "Save to Files" on iPhone). Desktop browsers download it.
+    var touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    var file = null;
+    try { file = new File([blob], filename, { type: 'application/json' }); } catch (err) { file = null; }
+
+    if (touch && file && navigator.canShare && navigator.share && navigator.canShare({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Event countdowns backup' })
+        .then(function () { showBackupStatus('Backup ready: ' + filename + '.', 'success'); })
+        .catch(function (err) {
+          if (err && err.name === 'AbortError') return; // user closed the share sheet
+          downloadBlob(blob, filename);
+        });
+      return;
+    }
+    downloadBlob(blob, filename);
+  }
+
+  function readFileText(file) {
+    if (file.text) return file.text();
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(String(reader.result)); };
+      reader.onerror = function () { reject(reader.error); };
+      reader.readAsText(file);
+    });
+  }
+
+  // Turn one imported entry into a clean event, or null if it isn't usable.
+  function sanitizeImported(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    var title = typeof raw.title === 'string' ? raw.title.trim().slice(0, 80) : '';
+    var d = new Date(raw.datetime);
+    if (!title || isNaN(d.getTime())) return null;
+    var color = typeof raw.color === 'string' && /^#[0-9a-f]{6}$/i.test(raw.color) ? raw.color : COLORS[0].hex;
+    var createdAt = typeof raw.createdAt === 'number' && !isNaN(raw.createdAt) ? raw.createdAt : Date.now();
+    var id = typeof raw.id === 'string' && raw.id ? raw.id : uid();
+    return { id: id, title: title, datetime: d.toISOString(), color: color, createdAt: createdAt };
+  }
+
+  // Adds events from the file to the current list. Events already in the
+  // list (same id, or same title and time) are skipped, so importing the
+  // same backup twice never creates duplicates.
+  function importFromText(text) {
+    var data;
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      showBackupStatus("That file couldn't be read. Choose a backup exported from this app.", 'error');
+      return;
+    }
+    var list = Array.isArray(data) ? data : (data && Array.isArray(data.events) ? data.events : null);
+    if (!list) {
+      showBackupStatus("That file doesn't contain events from this app.", 'error');
+      return;
+    }
+
+    var ids = {};
+    var keys = {};
+    state.events.forEach(function (e) {
+      ids[e.id] = true;
+      keys[e.title + '|' + e.datetime] = true;
+    });
+
+    var added = [], dupes = 0, invalid = 0;
+    list.forEach(function (raw) {
+      var ev = sanitizeImported(raw);
+      if (!ev) { invalid++; return; }
+      var key = ev.title + '|' + ev.datetime;
+      if (ids[ev.id] || keys[key]) { dupes++; return; }
+      ids[ev.id] = true;
+      keys[key] = true;
+      added.push(ev);
+    });
+
+    if (added.length === 0) {
+      var none = dupes > 0
+        ? 'Nothing new to import. All ' + plural(dupes, 'event') + ' are already in your list.'
+        : 'No usable events were found in that file.';
+      showBackupStatus(none, dupes > 0 ? 'success' : 'error');
+      return;
+    }
+
+    var before = state.events.slice();
+    state.events = state.events.concat(added);
+    sortEvents();
+    if (!persist()) {
+      state.events = before;
+      showBackupStatus("Couldn't save the imported events to browser storage.", 'error');
+      return;
+    }
+    render();
+
+    var msg = 'Imported ' + plural(added.length, 'event') + '.';
+    if (dupes) msg += ' ' + plural(dupes, 'event') + ' already in your list.';
+    if (invalid) msg += ' ' + invalid + (invalid === 1 ? ' entry' : ' entries') + ' skipped (unreadable).';
+    showBackupStatus(msg, 'success');
+  }
+
+  function onImportFileChosen(e) {
+    var input = e.target;
+    var file = input.files && input.files[0];
+    if (!file) return;
+    readFileText(file)
+      .then(importFromText)
+      .catch(function () {
+        showBackupStatus("That file couldn't be read.", 'error');
+      })
+      .then(function () { input.value = ''; });
   }
 
   /* ---------- Countdown math ---------- */
@@ -466,6 +634,17 @@
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && state.formOpen) closeForm();
+    });
+
+    $('btn-export').addEventListener('click', exportEvents);
+    $('import-file').addEventListener('change', onImportFileChosen);
+    // The Import control is a label (most reliable way to open the file
+    // picker on iPhone); let Enter/Space open it from the keyboard too.
+    $('btn-import').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        $('import-file').click();
+      }
     });
 
     // Refresh immediately when returning to the tab or reopening the home-screen app

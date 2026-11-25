@@ -56,6 +56,15 @@
 
     <section id="body-area" aria-live="off"></section>
 
+    <section class="backup" aria-label="Backup">
+      <div class="backup-actions">
+        <button type="button" id="btn-export" class="ghost small">Export events</button>
+        <label for="import-file" id="btn-import" class="btn ghost small" role="button" tabindex="0">Import events</label>
+        <input type="file" id="import-file" class="visually-hidden" accept=".json,application/json" />
+      </div>
+      <div id="backup-status" class="backup-status" role="status" aria-live="polite"></div>
+    </section>
+
     <footer class="footer">Data is stored locally in this browser only.</footer>
   </main>
 </body>
