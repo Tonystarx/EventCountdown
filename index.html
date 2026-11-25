@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Event countdowns</title>
+  <title>Event Countdowns</title>
   <meta name="description" content="Minimal countdown timers for upcoming events." />
   <meta name="theme-color" content="#0a0a0a" />
   <meta name="color-scheme" content="dark" />
@@ -24,48 +24,49 @@
   <main class="container">
     <header class="header">
       <div class="title-block">
-        <h1>Event countdowns</h1>
+        <h1>Event Countdowns</h1>
         <div class="count" id="count-display"></div>
       </div>
-      <button type="button" id="toggle-form" class="primary">+ Add event</button>
     </header>
-
-    <section id="form-wrap" class="hidden" aria-label="Add event">
-      <form class="form-panel" id="event-form" novalidate>
-        <div class="field">
-          <label for="evt-title">Title</label>
-          <input type="text" id="evt-title" placeholder="e.g. Daughter's birthday" maxlength="80" autocomplete="off" />
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label for="evt-dt">Date &amp; time (Eastern)</label>
-            <input type="datetime-local" id="evt-dt" />
-          </div>
-          <div class="field">
-            <span class="label">Color</span>
-            <div class="swatches" id="swatches" role="radiogroup" aria-label="Event color"></div>
-          </div>
-        </div>
-        <div id="form-err" class="error-msg hidden" role="alert"></div>
-        <div class="form-actions">
-          <button type="button" id="btn-cancel" class="ghost">Cancel</button>
-          <button type="submit" id="btn-save" class="primary">Save event</button>
-        </div>
-      </form>
-    </section>
 
     <section id="body-area" aria-live="off"></section>
 
+    <div class="add-area">
+      <button type="button" id="toggle-form" class="primary add-btn">+ Add Event</button>
+
+      <section id="form-wrap" class="hidden" aria-label="Add event">
+        <form class="form-panel" id="event-form" novalidate>
+          <div class="field">
+            <label for="evt-title">Title</label>
+            <input type="text" id="evt-title" placeholder="e.g. Daughter's birthday" maxlength="80" autocomplete="off" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="evt-dt">Date &amp; time (Eastern)</label>
+              <input type="datetime-local" id="evt-dt" />
+            </div>
+            <div class="field">
+              <span class="label">Color</span>
+              <div class="swatches" id="swatches" role="radiogroup" aria-label="Event color"></div>
+            </div>
+          </div>
+          <div id="form-err" class="error-msg hidden" role="alert"></div>
+          <div class="form-actions">
+            <button type="button" id="btn-cancel" class="ghost">Cancel</button>
+            <button type="submit" id="btn-save" class="primary">Save Event</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
     <section class="backup" aria-label="Backup">
       <div class="backup-actions">
-        <button type="button" id="btn-export" class="ghost small">Export events</button>
-        <label for="import-file" id="btn-import" class="btn ghost small" role="button" tabindex="0">Import events</label>
+        <button type="button" id="btn-export" class="ghost small">Export Events</button>
+        <label for="import-file" id="btn-import" class="btn ghost small" role="button" tabindex="0">Import Events</label>
         <input type="file" id="import-file" class="visually-hidden" accept=".json,application/json" />
       </div>
       <div id="backup-status" class="backup-status" role="status" aria-live="polite"></div>
     </section>
-
-    <footer class="footer">Data is stored locally in this browser only.</footer>
   </main>
 </body>
 </html>

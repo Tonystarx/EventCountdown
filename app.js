@@ -16,7 +16,6 @@
   // All times are entered and shown in US Eastern Time, whatever time zone the
   // device or browser reports. EST/EDT daylight-saving changes are handled.
   var TIME_ZONE = 'America/New_York';
-  var TIME_ZONE_LABEL = 'Eastern Time';
 
   // Text color used on top of any color fill. Near-black gives the highest
   // contrast on every swatch in the palette.
@@ -144,13 +143,6 @@
     if (off2 !== off1) utc = wall - off2; // crossing a DST change
     var d = new Date(utc);
     return isNaN(d.getTime()) ? null : d;
-  }
-
-  function renderTimeZoneNote() {
-    var footer = document.querySelector('.footer');
-    if (!footer) return;
-    footer.textContent = 'Data is stored locally in this browser only. Export a backup before ' +
-      'clearing browser data. All times are ' + TIME_ZONE_LABEL + '.';
   }
 
   /* ---------- Backup: export / import ---------- */
@@ -407,7 +399,11 @@
     buildSwatches();
     $('form-wrap').classList.remove('hidden');
     $('toggle-form').classList.add('hidden');
-    setTimeout(function () { $('evt-title').focus(); }, 50);
+    // The form opens at the bottom of the list; bring it fully into view.
+    setTimeout(function () {
+      $('form-wrap').scrollIntoView({ behavior: 'smooth', block: 'end' });
+      $('evt-title').focus({ preventScroll: true });
+    }, 50);
   }
 
   function closeForm() {
@@ -537,7 +533,7 @@
     });
 
     if (state.events.length === 0) {
-      body.innerHTML = '<div class="empty-state">No events yet. Tap <strong>+ Add event</strong> to create your first countdown.</div>';
+      body.innerHTML = '<div class="empty-state">No events yet. Tap <strong>+ Add Event</strong> below to create your first countdown.</div>';
       return;
     }
 
@@ -661,7 +657,6 @@
     });
 
     loadEvents();
-    renderTimeZoneNote();
     render();
     setInterval(tickAll, 1000);
   }
